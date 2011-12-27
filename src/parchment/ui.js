@@ -18,20 +18,13 @@ TODO:
 
 (function($){
 
-if (!String.prototype.entityify) {
-    String.prototype.entityify = function () {
-        return this.replace(/&/g, "&amp;").replace(/</g,
-            "&lt;").replace(/>/g, "&gt;");
-    };
-}
-
 var window = this,
 
 // Map results callback
 results_link = '<p><a href="' + location.href + '?story=http://mirror.ifarchive.org/',
 map_results_callback = function( story )
 {
-	return results_link + story.path + '">' + story.desc.entityify() + '</a></p>';
+	return results_link + story.path + '">' + story.desc + '</a></p>';
 };
 
 // The main UI class
