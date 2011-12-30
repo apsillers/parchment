@@ -26,6 +26,8 @@ var space_replacer = function( spaces )
 	return '\n' + Array( spaces.length ).join( '&ensp;' );
 },
 
+spanningEnabled = true,
+
 // Root stream handler. Some structures (like text grids) could have alternative handlers
 basic_stream_handler = function( e )
 {
@@ -49,7 +51,21 @@ basic_stream_handler = function( e )
 		// Fix initial spaces, but not for tt (which will actually mess it up)
 		// For tt's, fix all spaces so that they will still wrap
 		text = node == 'tt' ? text.replace( /( +)/g, '<span class="space">$1</span>' ) : text.replace( /\n +(?=\S)/g, space_replacer );
+
 		elem.html( text.replace( /\n/g, '<br>' ) );
+
+        if(spanningEnabled) {
+            // surround each word with clickable span tags
+            spanify(elem);
+
+            // on double clicking a word, add it to the input line
+            setTimeout(function() {
+                elem.find('.clk-add').dblclick(addWordToLine)
+            }, 100);
+
+            // clean up old spans, so the pages doesn't get too clutered with elements for every single word
+            despanifySibling(elem, 15);
+        }
 	}
 	
 	// If we have a custom function to run, do so
@@ -59,6 +75,63 @@ basic_stream_handler = function( e )
 	}
 		
 	return false;
+},
+
+// Surround each word in the element with span tags
+spanify = function($elem) {
+    $elem.contents().each(function() {
+        // if this child is a text node, do a regex replace
+        if(this.nodeValue != null) {
+            // surround the each word in the text node with a span
+            var spanHTML = this.nodeValue.replace(/(\b\w+\b)/g, "<span class='clk-add'>$1</span>");
+
+            // HACK: surround HTML with dummy <a> tags that will will clean up at the end
+            // This is because jQuery drops bookending text nodes but not element nodes, e.g.:
+            //   $("foo <span>bar</span> baz") == [<span>bar</span>]
+            //   $("<a></a>foo <span>baz</span> baz<a></a>") == [<a></a>, "foo ", <span>bar</span>, " baz", <a></a>]
+            spanHTML = "<a class='parchment-remove-me'></a>" + spanHTML + "<a class='parchment-remove-me'></a>";
+
+            // build the HTML string and replace the text node with it
+            $(this).replaceWith( $(spanHTML) );
+        } else {
+            // if this is an element node, recursively spanify child elements
+            spanify($(this));
+        }
+    });
+    // clean up all bookending dummy tags
+    $elem.children("a.parchment-remove-me").remove();
+},
+
+
+// Find nth-last sibling of the element and despanify it
+despanifySibling = function($elem, n) {
+        var siblings = $elem.parent().children();
+        if(siblings.length > n) {
+            despanify( siblings.eq(siblings.length - n - 1) );
+        }
+},
+
+// Replace all clickable spans in the element with their text
+despanify = function($elem) {
+    $elem.find(".clk-add").replaceWith(function() {
+        return this.innerText || this.textContent;
+    });
+},
+
+// Add the innerText value of the calling (e.g. clicked) element to the input line
+// (Should be used an event listener) 
+addWordToLine = function() {
+    // get the clicked word and the input line text
+    var addText = this.innerText || this.textContent;
+    var currentText = $(".TextInput").val();
+    // add the clicked word to the input line (with a leading space, if appropriate)
+    if(currentText.lastIndexOf(" ") == currentText.length-1 || currentText == "") {
+        $(".TextInput").val(currentText + addText);
+    } else {
+        $(".TextInput").val(currentText + " " + addText);
+    }
+    // after the doubleclick, return focus to the input line
+    $(".TextInput").focus();
 },
 
 // Pattern for getting the RGB components from a colour
