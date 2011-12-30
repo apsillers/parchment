@@ -7,7 +7,6 @@ Copyright (c) 2008-2011 The Parchment Contributors
 BSD licenced
 http://code.google.com/p/parchment
 
-NOTE: git santiy test
 */
 
 /*
